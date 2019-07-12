@@ -1,0 +1,61 @@
+global
+    log         127.0.0.1 local2     #Log configuration
+ 
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000                
+    user        haproxy             #Haproxy running under user and group "haproxy"
+    group       haproxy
+    daemon
+ 
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+#---------------------------------------------------------------------
+#HAProxy Monitoring Config
+#---------------------------------------------------------------------
+frontend stats
+    listen {{ ansible_enp0s8["ipv4"]["address"] }} *:8080                #Haproxy Monitoring run on port 8080
+    mode http
+#    option forwardfor
+    option httpclose
+    stats enable
+    stats show-legends
+    stats refresh 5s
+    stats uri /stats                             #URL for HAProxy monitoring
+    stats realm Haproxy\ Statistics
+    stats auth {{ ha_username }}:{{ ha_password}}            #User and Password for login to the monitoring dashboard
+    stats admin if TRUE
+#    default_backend bk_rdp
+
+frontend ft_rdp
+  mode tcp
+  bind {{ ansible_enp0s8["ipv4"]["address"] }}:3389 name rdp
+  timeout client 1h
+  log global
+  option tcplog
+  tcp-request inspect-delay 2s
+  tcp-request content accept if RDP_COOKIE
+  default_backend bk_rdp
+
+
+backend bk_rdp
+  mode tcp
+  option tcpka
+  balance roundrobin
+  persist rdp-cookie
+  stick-table type string size 204800 expire 120m
+  stick on rdp_cookie(mstshash)
+  timeout server 1h
+  timeout connect 4s
+  log global
+  option tcplog
+  option tcp-check
+#  tcp-check connect port 3389 ssl
+  default-server inter 3s rise 2 fall 3
+    {% for item in ipservers %}
+    server {{ item }} check                 #Nginx1 
+    {% endfor %}
+
+
+
+
