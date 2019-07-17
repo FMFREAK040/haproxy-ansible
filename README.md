@@ -19,7 +19,6 @@ Dependencies
 Example Playbook
 ----------------
 
----
 - hosts: test3
   become: yes
   name: Install haproxy
