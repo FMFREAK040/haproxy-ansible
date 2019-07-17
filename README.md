@@ -19,12 +19,12 @@ Dependencies
 Example Playbook
 ----------------
 
+
 - hosts: test3
   become: yes
   name: Install haproxy
-  roles: 
+  roles:
     - role: haproxy
-
 
 
 License
